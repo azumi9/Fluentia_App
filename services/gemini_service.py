@@ -23,7 +23,7 @@ async def translate_with_example_gemini(text_to_translate: str, user_level: str 
         print("Error: GEMINI_API_KEY не знайдено.")
         return "Помилка конфігурації: API ключ для Google Gemini не знайдено."
     # Визначення моделі та URL API Gemini
-    model = "gemini-1.5-flash-latest"
+    model = "gemini-3.1-flash-lite-preview"
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     prompt = (

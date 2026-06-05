@@ -1,21 +1,27 @@
 import sqlite3
 from datetime import datetime, time
 import random
+
 # Визначаємо шлях до файлу бази даних. Використовуємо змінну середовища або поточну папку.
 DB_NAME = "db.sqlite3"
-WORDS_PER_PAGE_DB = 10 # Константа: кількість слів на сторінці словника
+WORDS_PER_PAGE_DB = 10  # Константа: кількість слів на сторінці словника
+
 
 def init_db():
     """Ініціалізує базу даних, створюючи таблиці, якщо вони не існують."""
     conn = sqlite3.connect(DB_NAME)  # Встановлення з'єднання з БД
     cursor = conn.cursor()  # Створення об'єкту курсора для виконання SQL запитів
-    # Створення таблиці користувачів
+
+    # Створення таблиці користувачів (оновлена версія)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
-            level TEXT DEFAULT 'Не встановлено'
+            name TEXT,
+            age INTEGER,
+            level TEXT DEFAULT 'B1'
         )
     ''')
+
     # Створення таблиці нагадувань
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS reminders (
@@ -29,6 +35,7 @@ def init_db():
             FOREIGN KEY(user_id) REFERENCES users(user_id)
         )
     ''')
+
     # Створення таблиці словника
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS vocabulary (
@@ -43,11 +50,41 @@ def init_db():
     ''')
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocabulary_user_id ON vocabulary (user_id)")
 
-    conn.commit() # Збереження змін у базі даних
-    conn.close() # Закриття з'єднання з БД
+    # Створення таблиці історії рольових ігор
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS roleplay_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            scenario TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
+        )
+    ''')
+
+    conn.commit()  # Збереження змін у базі даних
+    conn.close()  # Закриття з'єднання з БД
     print("Базу даних ініціалізовано/перевірено.")
 
+
 # Функції для роботи з таблицею Users
+def save_user(user_id: int, name: str, age: int, level: str):
+    """Зберігає або повністю оновлює дані користувача."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT OR REPLACE INTO users (user_id, name, age, level) VALUES (?, ?, ?, ?)",
+            (user_id, name, age, level)
+        )
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"Помилка збереження користувача {user_id}: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+
 def update_user_level(user_id: int, level: str | None):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -55,7 +92,7 @@ def update_user_level(user_id: int, level: str | None):
         # Додаємо користувача, якщо його ще немає (ігноруємо помилку, якщо вже є)
         cursor.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
         cursor.execute("UPDATE users SET level = ? WHERE user_id = ?",
-                       (level if level is not None else 'Не встановлено', user_id))
+                       (level if level is not None else 'B1', user_id))
         conn.commit()
     except sqlite3.Error as e:
         print(f"Помилка оновлення рівня для {user_id}: {e}")
@@ -63,25 +100,27 @@ def update_user_level(user_id: int, level: str | None):
     finally:
         conn.close()
 
+
 def get_user_level(user_id: int) -> str:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    level = "Не встановлено"
+    level = "B1"
     try:
         # Вибираємо рівень з таблиці users за user_id
         cursor.execute("SELECT level FROM users WHERE user_id = ?", (user_id,))
-        result = cursor.fetchone() # Отримуємо один рядок результату
+        result = cursor.fetchone()  # Отримуємо один рядок результату
         if result and result[0]:
-             level = result[0]
+            level = result[0]
     except sqlite3.Error as e:
         print(f"Помилка отримання рівня для {user_id}: {e}")
     finally:
         conn.close()
-    return level # Повертаємо отриманий рівень або значення за замовчуванням
+    return level  # Повертаємо отриманий рівень або значення за замовчуванням
+
 
 # Функції для роботи з таблицею Reminders
 def add_or_update_reminder(user_id: int, reminder_time: time, frequency: str, weekday: int | None):
-    time_str = reminder_time.strftime('%H:%M') # Форматуємо час у рядок 'ГГ:ХХ'
+    time_str = reminder_time.strftime('%H:%M')  # Форматуємо час у рядок 'ГГ:ХХ'
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
@@ -98,10 +137,11 @@ def add_or_update_reminder(user_id: int, reminder_time: time, frequency: str, we
     finally:
         conn.close()
 
+
 def delete_reminders(user_id: int) -> bool:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    deleted_rows = 0 # Лічильник видалених рядків
+    deleted_rows = 0  # Лічильник видалених рядків
     try:
         cursor.execute("DELETE FROM reminders WHERE user_id = ?", (user_id,))
         deleted_rows = cursor.rowcount
@@ -111,7 +151,8 @@ def delete_reminders(user_id: int) -> bool:
         conn.rollback()
     finally:
         conn.close()
-    return deleted_rows > 0 # Повертає True, якщо хоча б одне нагадування було видалено
+    return deleted_rows > 0  # Повертає True, якщо хоча б одне нагадування було видалено
+
 
 def get_active_reminders_for_time(current_time_str: str) -> list[tuple[int, int, str, int | None]]:
     conn = sqlite3.connect(DB_NAME)
@@ -124,12 +165,13 @@ def get_active_reminders_for_time(current_time_str: str) -> list[tuple[int, int,
             FROM reminders
             WHERE reminder_time = ? AND is_active = 1
         """, (current_time_str,))
-        reminders_list = cursor.fetchall() # Отримуємо всі відповідні рядки
+        reminders_list = cursor.fetchall()  # Отримуємо всі відповідні рядки
     except sqlite3.Error as e:
         print(f"Помилка отримання активних нагадувань: {e}")
     finally:
         conn.close()
-    return reminders_list # Повертаємо список кортежів
+    return reminders_list  # Повертаємо список кортежів
+
 
 def deactivate_reminder(reminder_id: int):
     conn = sqlite3.connect(DB_NAME)
@@ -143,11 +185,12 @@ def deactivate_reminder(reminder_id: int):
     finally:
         conn.close()
 
+
 # Функції для роботи з таблицею Vocabulary
 def add_word_to_vocabulary(user_id: int, original: str, translation: str) -> bool:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    added = False # Прапорець успішного додавання
+    added = False  # Прапорець успішного додавання
     try:
         # Додаємо користувача, якщо його немає
         cursor.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
@@ -155,7 +198,7 @@ def add_word_to_vocabulary(user_id: int, original: str, translation: str) -> boo
             INSERT OR IGNORE INTO vocabulary (user_id, original_text, translation)
             VALUES (?, ?, ?)
         """, (user_id, original.strip(), translation.strip()))
-        added = cursor.rowcount > 0 # Якщо було додано хоча б 1 рядок, встановлюємо прапорець
+        added = cursor.rowcount > 0  # Якщо було додано хоча б 1 рядок, встановлюємо прапорець
         conn.commit()
     except sqlite3.Error as e:
         print(f"Помилка додавання слова до словника для {user_id}: {e}")
@@ -163,6 +206,7 @@ def add_word_to_vocabulary(user_id: int, original: str, translation: str) -> boo
     finally:
         conn.close()
     return added
+
 
 def get_user_vocabulary(user_id: int, limit: int = WORDS_PER_PAGE_DB, offset: int = 0) -> list[tuple[int, str, str]]:
     conn = sqlite3.connect(DB_NAME)
@@ -182,22 +226,24 @@ def get_user_vocabulary(user_id: int, limit: int = WORDS_PER_PAGE_DB, offset: in
         print(f"Помилка отримання словника для {user_id}: {e}")
     finally:
         conn.close()
-    return vocabulary_list # Повертаємо список кортежів (id, original, translation)
+    return vocabulary_list  # Повертаємо список кортежів (id, original, translation)
+
 
 def count_user_vocabulary(user_id: int) -> int:
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    count = 0 # Лічильник слів
+    count = 0  # Лічильник слів
     try:
         cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE user_id = ?", (user_id,))
         result = cursor.fetchone()
         if result:
-            count = result[0] # Отримуємо значення лічильника
+            count = result[0]  # Отримуємо значення лічильника
     except sqlite3.Error as e:
         print(f"Помилка підрахунку слів у словнику для {user_id}: {e}")
     finally:
         conn.close()
     return count
+
 
 def delete_word_from_vocabulary(user_id: int, word_id: int) -> bool:
     conn = sqlite3.connect(DB_NAME)
@@ -206,7 +252,7 @@ def delete_word_from_vocabulary(user_id: int, word_id: int) -> bool:
     try:
         # Виконуємо запит DELETE за ID слова та ID користувача
         cursor.execute("DELETE FROM vocabulary WHERE id = ? AND user_id = ?", (word_id, user_id))
-        deleted = cursor.rowcount > 0 # Перевіряємо, чи був видалений хоча б один рядок
+        deleted = cursor.rowcount > 0  # Перевіряємо, чи був видалений хоча б один рядок
         conn.commit()
     except sqlite3.Error as e:
         print(f"Помилка видалення слова ID {word_id} для користувача {user_id}: {e}")
@@ -214,6 +260,7 @@ def delete_word_from_vocabulary(user_id: int, word_id: int) -> bool:
     finally:
         conn.close()
     return deleted
+
 
 def search_user_vocabulary(user_id: int, query: str) -> list[tuple[str, str]]:
     conn = sqlite3.connect(DB_NAME)
@@ -233,7 +280,8 @@ def search_user_vocabulary(user_id: int, query: str) -> list[tuple[str, str]]:
         print(f"Помилка пошуку у словнику для {user_id} з запитом '{query}': {e}")
     finally:
         conn.close()
-    return results # Повертаємо список знайдених пар (original, translation)
+    return results  # Повертаємо список знайдених пар (original, translation)
+
 
 def delete_user_vocabulary(user_id: int):
     conn = sqlite3.connect(DB_NAME)
@@ -247,6 +295,7 @@ def delete_user_vocabulary(user_id: int):
         conn.rollback()
     finally:
         conn.close()
+
 
 def get_random_words(user_id: int, count: int) -> list[tuple[int, str, str]]:
     """Повертає список випадкових слів (id, original, translation) зі словника користувача."""
@@ -267,4 +316,4 @@ def get_random_words(user_id: int, count: int) -> list[tuple[int, str, str]]:
         print(f"Помилка отримання випадкових слів для {user_id}: {e}")
     finally:
         conn.close()
-    return words # Повертаємо список випадкових слів
+    return words  # Повертаємо список випадкових слів

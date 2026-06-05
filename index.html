@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fluentia Web</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --primary-hover: #357ABD;
+            --success: #58CC02;
+            --success-hover: #46A302;
+            --danger: #FF4B4B;
+            --bg-color: #F7F9FC;
+            --card-bg: #FFFFFF;
+            --text-main: #3C3C3C;
+            --text-muted: #8F959E;
+            --chat-user: #E3F2FD;
+            --chat-bot: #FFFFFF;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; }
+
+        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--text-main); }
+
+        #app-container { width: 100%; max-width: 420px; background: var(--bg-color); height: 100vh; max-height: 850px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 20px; }
+
+        /* Header */
+        .header { background: var(--card-bg); padding: 20px; text-align: center; font-weight: 800; font-size: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E5E5E5; z-index: 10; }
+        .back-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 16px; font-weight: 700; visibility: hidden; transition: 0.2s; }
+        .back-btn:hover { color: var(--primary-hover); }
+
+        /* Screens */
+        .screen { display: none; flex: 1; flex-direction: column; padding: 20px; overflow-y: auto; background: var(--bg-color); animation: fadeIn 0.3s ease-in-out; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Typography & Layout */
+        h2 { font-size: 24px; font-weight: 800; margin-bottom: 10px; color: var(--text-main); }
+        p { color: var(--text-muted); font-size: 16px; margin-bottom: 20px; }
+        .center-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+
+        /* Inputs & Selects */
+        input[type="text"], input[type="number"], select { width: 100%; padding: 15px; border: 2px solid #E5E5E5; border-radius: 15px; font-size: 16px; font-weight: 600; margin-bottom: 15px; outline: none; transition: 0.2s; color: var(--text-main); background: var(--card-bg); }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        /* Buttons */
+        .btn-primary { background-color: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-size: 18px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; box-shadow: 0 4px 0 #357ABD; }
+        .btn-primary:active { transform: translateY(4px); box-shadow: none; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-success { background-color: var(--success); box-shadow: 0 4px 0 var(--success-hover); }
+        .btn-success:active { transform: translateY(4px); box-shadow: none; }
+
+        .menu-btn { background-color: var(--card-bg); border: 2px solid #E5E5E5; color: var(--text-main); padding: 18px; border-radius: 15px; font-size: 17px; font-weight: 700; cursor: pointer; transition: 0.2s; margin-bottom: 12px; width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 15px; }
+        .menu-btn:hover { border-color: var(--primary); background-color: #F0F7FF; }
+
+        /* Chat */
+        #chat-box { flex: 1; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
+        .message { padding: 15px; border-radius: 20px; max-width: 85%; word-wrap: break-word; line-height: 1.5; font-size: 16px; position: relative; font-weight: 600; }
+        .user-msg { background-color: var(--chat-user); color: var(--text-main); align-self: flex-end; border-bottom-right-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .bot-msg { background-color: var(--chat-bot); color: var(--text-main); align-self: flex-start; border-bottom-left-radius: 5px; border: 1px solid #E5E5E5; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+
+        .feedback-perfect { color: var(--success); background-color: #E8F5E9; font-size: 14px; padding: 8px 12px; border-radius: 10px; margin-bottom: 8px; display: inline-block; border: 1px solid #C8E6C9; }
+        .feedback-error { color: var(--danger); background-color: #FFEBEE; font-size: 14px; padding: 8px 12px; border-radius: 10px; margin-bottom: 8px; display: inline-block; border: 1px solid #FFCDD2; }
+
+        .input-area { display: flex; background: var(--card-bg); padding: 15px; border-top: 2px solid #E5E5E5; gap: 10px; }
+        .input-area input { flex: 1; margin: 0; border-radius: 20px; padding: 12px 15px; }
+        .input-area button { background-color: var(--primary); color: white; border: none; border-radius: 20px; padding: 0 20px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .input-area button:hover { background-color: var(--primary-hover); }
+
+        .save-btn { margin-top: 10px; padding: 8px 15px; background-color: #F0F7FF; border: 2px solid var(--primary); border-radius: 12px; color: var(--primary); font-size: 14px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        .save-btn.saved { background-color: var(--success); color: white; border-color: var(--success); }
+
+        /* Dictionary */
+        .dict-word { background: var(--card-bg); padding: 15px; margin-bottom: 12px; border-radius: 15px; border: 2px solid #E5E5E5; border-left: 5px solid var(--primary); text-align: left; width: 100%; display: flex; flex-direction: column; }
+        .dict-word strong { font-size: 18px; color: var(--text-main); }
+        .dict-word small { color: var(--text-muted); font-size: 15px; margin-top: 5px; }
+
+        /* Quiz */
+        .quiz-option-btn { width: 100%; padding: 15px; margin-bottom: 12px; border: 2px solid #E5E5E5; border-radius: 15px; background: var(--card-bg); font-size: 17px; font-weight: 700; cursor: pointer; transition: 0.2s; color: var(--text-main); }
+        .quiz-option-btn:hover:not(:disabled) { border-color: var(--primary); background: #F0F7FF; }
+        .quiz-option-btn.correct { background: #E8F5E9; border-color: var(--success); color: var(--success-hover); }
+        .quiz-option-btn.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div class="header">
+        <button class="back-btn" id="btn-back" onclick="goToMenu()">❮ Назад</button>
+        <span id="header-title">Fluentia 🇬🇧</span>
+        <div style="width: 60px;"></div>
+    </div>
+
+    <div id="screen-login" class="screen active">
+        <div class="center-content">
+            <h2>Привіт! Я Fluentia</h2>
+            <p>Твій безпечний простір для вивчення англійської.</p>
+            <input type="text" id="user-name" placeholder="Як тебе звати?">
+            <input type="number" id="user-age" placeholder="Скільки тобі років?">
+            <select id="user-level">
+                <option value="A1">Рівень: A1 (Початківець)</option>
+                <option value="A2">Рівень: A2 (Елементарний)</option>
+                <option value="B1" selected>Рівень: B1 (Середній)</option>
+                <option value="B2">Рівень: B2 (Вище середнього)</option>
+            </select>
+            <button class="btn-primary btn-success" onclick="login()">Почати навчання</button>
+        </div>
+    </div>
+
+    <div id="screen-menu" class="screen">
+        <div class="center-content" style="justify-content: flex-start; padding-top: 20px;">
+            <h2 id="welcome-text">Привіт!</h2>
+            <p style="margin-bottom: 30px;">Обери, що хочеш робити сьогодні:</p>
+
+            <button class="menu-btn" onclick="openChat('translate')">💬 Перекладач та Приклади</button>
+            <button class="menu-btn" onclick="openScreen('screen-scenarios', 'Рольові ігри')">🎭 Рольові ситуації (Чат)</button>
+            <button class="menu-btn" onclick="openScreen('screen-dictionary', 'Мій словник')">📚 Мій словник</button>
+            <button class="menu-btn" onclick="openScreen('screen-quiz-setup', 'Налаштування тесту')">🧠 Перевірка знань</button>
+
+            <button class="menu-btn" style="margin-top: 20px; border-color: transparent; background: #E3F2FD; color: #4A90E2;" onclick="openScreen('screen-login', 'Налаштування профілю')">⚙️ Налаштування профілю</button>
+        </div>
+    </div>
+
+    <div id="screen-scenarios" class="screen">
+        <div class="center-content" style="justify-content: flex-start;">
+            <h2>Обери ситуацію</h2>
+            <p>Практикуй розмову в безпечному середовищі.</p>
+            <button class="menu-btn" onclick="startRoleplay('cafe')">🍔 Замовлення в кафе</button>
+            <button class="menu-btn" onclick="startRoleplay('school')">🎒 Знайомство в школі</button>
+            <button class="menu-btn" onclick="startRoleplay('city')">🗺️ Навігація в місті</button>
+        </div>
+    </div>
+
+    <div id="screen-chat" class="screen" style="padding: 0; background: #F0F2F5;">
+        <div id="chat-actions" style="display:none; padding: 15px; background: white; border-bottom: 1px solid #ddd;">
+            <button onclick="endRoleplay()" class="btn-primary" style="background-color: var(--danger); box-shadow: 0 4px 0 #CC0000; font-size: 16px; padding: 10px;">🏁 Завершити діалог (Фідбек)</button>
+        </div>
+        <div id="chat-box" style="padding: 15px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="chat-input" class="input-area" style="display: none;">
+        <input type="text" id="text-input" placeholder="Напиши повідомлення..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+
+    <div id="screen-dictionary" class="screen">
+        <div id="dict-container" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    </div>
+
+    <div id="screen-quiz-setup" class="screen">
+        <div class="center-content" style="justify-content: flex-start; padding-top: 20px;">
+            <h2>Налаштування тесту</h2>
+            <p>Обери кількість питань:</p>
+            <button class="menu-btn" onclick="startQuiz(5)">🧠 5 питань</button>
+            <button class="menu-btn" onclick="startQuiz(10)">🧠 10 питань</button>
+            <button class="menu-btn" onclick="startQuiz(15)">🧠 15 питань</button>
+        </div>
+    </div>
+
+    <div id="screen-quiz" class="screen">
+        <div class="center-content" style="justify-content: flex-start; padding-top: 20px;">
+            <h3 id="quiz-question" style="margin-bottom: 25px; font-size: 20px; font-weight: 800;">Завантаження...</h3>
+            <div id="quiz-options" style="width: 100%; display: flex; flex-direction: column;"></div>
+            <p id="quiz-feedback" style="font-weight: 800; margin-top: 20px; font-size: 18px;"></p>
+            <button class="btn-primary btn-success" id="next-quiz-btn" style="display: none; margin-top: 15px;">Наступне питання</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000/api";
+
+    let savedUser = JSON.parse(localStorage.getItem("fluentia_user"));
+    let currentUser = savedUser || { name: "", age: null, level: "B1", id: Math.floor(Math.random() * 1000000) };
+
+    window.onload = () => {
+        if (currentUser.name !== "") {
+            document.getElementById("user-name").value = currentUser.name;
+            document.getElementById("user-age").value = currentUser.age;
+            document.getElementById("user-level").value = currentUser.level;
+        }
+    };
+
+    let chatMode = "translate";
+    let currentScenario = "";
+
+    // Змінні тестування
+    let currentQuizCorrect = "";
+    let quizQuestionNumber = 0;
+    let quizScore = 0;
+    let maxQuizQuestions = 5;
+    let askedWordIds = [];
+
+    async function login() {
+        const nameInput = document.getElementById("user-name").value.trim();
+        const ageInput = document.getElementById("user-age").value.trim();
+
+        if (!nameInput || !ageInput) return alert("Будь ласка, заповни всі поля!");
+
+        currentUser.name = nameInput;
+        currentUser.age = parseInt(ageInput);
+        currentUser.level = document.getElementById("user-level").value;
+
+        localStorage.setItem("fluentia_user", JSON.stringify(currentUser));
+
+        try {
+            await fetch(`${API_URL}/onboarding`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    name: currentUser.name,
+                    age: currentUser.age,
+                    level: currentUser.level
+                })
+            });
+        } catch (error) {
+            console.error("Помилка збереження користувача:", error);
+        }
+
+        document.getElementById("welcome-text").innerText = `Привіт, ${currentUser.name}! 👋`;
+        openScreen("screen-menu", "Головне меню");
+    }
+
+    function openScreen(screenId, title) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        document.getElementById(screenId).classList.add("active");
+        document.getElementById("header-title").innerText = title;
+
+        document.getElementById("chat-input").style.display = (screenId === "screen-chat") ? "flex" : "none";
+        document.getElementById("btn-back").style.visibility = (screenId === "screen-login" || screenId === "screen-menu") ? "hidden" : "visible";
+        document.getElementById("chat-actions").style.display = "none";
+
+        if (screenId === "screen-dictionary") loadDictionary();
+    }
+
+    function goToMenu() { openScreen("screen-menu", "Головне меню"); }
+
+    function openChat(mode) {
+        chatMode = mode;
+        openScreen("screen-chat", "Перекладач");
+        document.getElementById("chat-box").innerHTML = "";
+        addMessage(`Привіт! Напиши слово чи фразу для перекладу.`, "bot-msg");
+    }
+
+    function startRoleplay(scenario) {
+        chatMode = 'roleplay';
+        currentScenario = scenario;
+        const titles = { 'cafe': "В Кафе", 'school': "У Школі", 'city': "В Місті" };
+        openScreen("screen-chat", titles[scenario]);
+        document.getElementById("chat-box").innerHTML = "";
+        document.getElementById("chat-actions").style.display = "block";
+
+        let promptMsg = "";
+        if (scenario === 'cafe') promptMsg = "Hello! Welcome to our cafe. What would you like to order today?";
+        if (scenario === 'school') promptMsg = "Hi! I'm your new classmate. Are you new here?";
+        if (scenario === 'city') promptMsg = "Hello! Do you need help finding a place?";
+        addMessage(promptMsg, "bot-msg");
+    }
+
+    async function endRoleplay() {
+        document.getElementById("chat-actions").style.display = "none";
+        document.getElementById("chat-input").style.display = "none";
+        const loadingId = "msg-" + Date.now();
+        addMessage("⏳ Аналізую діалог...", "bot-msg", loadingId);
+
+        try {
+            const response = await fetch(`${API_URL}/roleplay_feedback`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: currentUser.id, scenario: currentScenario })
+            });
+            const data = await response.json();
+            document.getElementById(loadingId)?.remove();
+
+            if (data.status === "success") {
+                let formattedFeedback = `<strong>📊 Результати:</strong><br><br>` + data.result.replace(/\n/g, '<br>');
+                addMessage(formattedFeedback, "bot-msg");
+            } else {
+                addMessage("❌ Помилка аналізу.", "bot-msg");
+            }
+        } catch (error) {
+            document.getElementById(loadingId)?.remove();
+            addMessage("❌ Немає зв'язку з сервером.", "bot-msg");
+        }
+    }
+
+    async function sendMessage() {
+        const inputField = document.getElementById("text-input");
+        const text = inputField.value.trim();
+        if (!text) return;
+
+        addMessage(text, "user-msg");
+        inputField.value = "";
+        const loadingId = "msg-" + Date.now();
+        addMessage("...", "bot-msg", loadingId);
+
+        try {
+            const url = chatMode === 'translate' ? `${API_URL}/translate` : `${API_URL}/roleplay`;
+            let bodyData = chatMode === 'translate'
+                ? { user_id: currentUser.id, text: text, level: currentUser.level }
+                : { user_id: currentUser.id, scenario: currentScenario, text: text, level: currentUser.level };
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bodyData)
+            });
+
+            const data = await response.json();
+            document.getElementById(loadingId)?.remove();
+
+            if (data.status === "success") {
+                let botHTML = "";
+                let fullText = data.result || "I'm sorry, I didn't get that.";
+
+                if (chatMode === 'roleplay') {
+                    if (fullText.includes("FEEDBACK:") && fullText.includes("REPLY:")) {
+                        let parts = fullText.split("REPLY:");
+                        let feedbackRaw = parts[0].replace("FEEDBACK:", "").trim();
+                        let actualReply = parts[1].trim();
+
+                        if (feedbackRaw.toLowerCase().includes("perfect")) {
+                            botHTML += `<div class="feedback-perfect">✅ Відмінно!</div><br>`;
+                        } else {
+                            botHTML += `<div class="feedback-error">💡 Порада: ${feedbackRaw}</div><br>`;
+                        }
+                        botHTML += actualReply.replace(/\n/g, '<br>');
+                    } else {
+                        botHTML = fullText.replace(/\n/g, '<br>');
+                    }
+                } else {
+                    botHTML = fullText.replace(/\n/g, '<br>');
+                    if (text.split(' ').length <= 5) {
+                        const transLine = fullText.split('\n').find(l => l.includes("Переклад:"));
+                        if (transLine) {
+                            let pt = transLine.substring(transLine.indexOf(":") + 1).split(',')[0].trim();
+                            botHTML += `<br><button class="save-btn" onclick="saveWord('${text.replace(/'/g, "\\'")}', '${pt.replace(/'/g, "\\'")}', this)">➕ Зберегти у словник</button>`;
+                        }
+                    }
+                }
+                addMessage(botHTML, "bot-msg");
+            } else {
+                addMessage("❌ Помилка сервера. Спробуй ще раз.", "bot-msg");
+            }
+        } catch (error) {
+            document.getElementById(loadingId)?.remove();
+            addMessage("❌ Помилка з'єднання з сервером.", "bot-msg");
+        }
+    }
+
+    function addMessage(text, className, id = "") {
+        const chatBox = document.getElementById("chat-box");
+        chatBox.insertAdjacentHTML('beforeend', `<div ${id ? `id="${id}"` : ""} class="message ${className}">${text}</div>`);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function handleKeyPress(event) { if (event.key === "Enter") sendMessage(); }
+
+    async function saveWord(original, translation, btn) {
+        btn.innerText = "⏳..."; btn.disabled = true;
+        try {
+            const response = await fetch(`${API_URL}/save_word`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: currentUser.id, original: original, translation: translation })
+            });
+            const data = await response.json();
+            if (data.status === "success") {
+                btn.innerText = "✅ Збережено"; btn.classList.add("saved");
+            } else {
+                btn.innerText = "⚠️ Вже у словнику"; btn.classList.add("saved");
+            }
+        } catch (error) {
+            btn.innerText = "❌ Помилка"; btn.disabled = false;
+        }
+    }
+
+    // === ЛОГІКА СЛОВНИКА === //
+    async function loadDictionary() {
+        const container = document.getElementById("dict-container");
+        container.innerHTML = '<p>⏳ Завантаження словника...</p>';
+        try {
+            const response = await fetch(`${API_URL}/dictionary/${currentUser.id}`);
+            const data = await response.json();
+            if (data.status === "success") {
+                if (data.words.length === 0) {
+                    container.innerHTML = '<img src="https://cdn-icons-png.flaticon.com/512/7486/7486747.png" width="100" style="opacity: 0.5; margin-bottom: 20px;"><p>Словник порожній.<br>Збережи слова у Перекладачі!</p>';
+                    return;
+                }
+                let html = '';
+                data.words.forEach(w => {
+                    html += `
+                    <div class="dict-word" id="word-${w.id}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="display: block;">${w.original}</strong>
+                                <small style="color: var(--text-muted); font-size: 15px;">${w.translation}</small>
+                            </div>
+                            <button onclick="deleteWord(${w.id})" style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 10px;">❌</button>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            }
+        } catch (error) {
+            container.innerHTML = '<p>❌ Помилка завантаження</p>';
+        }
+    }
+
+    async function deleteWord(wordId) {
+        if (!confirm("Видалити це слово зі словника?")) return;
+
+        try {
+            const response = await fetch(`${API_URL}/dictionary/${currentUser.id}/${wordId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                document.getElementById(`word-${wordId}`).remove();
+                if (document.querySelectorAll('.dict-word').length === 0) {
+                    document.getElementById("dict-container").innerHTML = '<img src="https://cdn-icons-png.flaticon.com/512/7486/7486747.png" width="100" style="opacity: 0.5; margin-bottom: 20px;"><p>Словник порожній.<br>Збережи слова у Перекладачі!</p>';
+                }
+            } else {
+                alert("❌ Не вдалося видалити слово.");
+            }
+        } catch (error) {
+            alert("❌ Помилка з'єднання з сервером.");
+        }
+    }
+
+    // === ЛОГІКА ТЕСТУВАННЯ === //
+    function startQuiz(length) {
+        try {
+            maxQuizQuestions = length;
+            quizQuestionNumber = 0;
+            quizScore = 0;
+            askedWordIds = [];
+
+            let nextBtn = document.getElementById("next-quiz-btn");
+            if (!nextBtn) {
+                alert("Помилка: Кнопку не знайдено");
+                return;
+            }
+
+            nextBtn.innerText = "Наступне питання";
+            nextBtn.onclick = loadQuiz;
+
+            openScreen("screen-quiz", "Тестування");
+            loadQuiz();
+        } catch (error) {
+            alert("Системна помилка: " + error.message);
+        }
+    }
+
+    async function loadQuiz() {
+        const questionEl = document.getElementById("quiz-question");
+        const optionsContainer = document.getElementById("quiz-options");
+        const feedbackEl = document.getElementById("quiz-feedback");
+        const nextBtn = document.getElementById("next-quiz-btn");
+
+        if (quizQuestionNumber >= maxQuizQuestions) {
+            let percent = Math.round((quizScore / maxQuizQuestions) * 100);
+            questionEl.innerText = "🏁 Тест завершено!";
+            optionsContainer.innerHTML = `<h2 style="text-align:center; color:var(--primary); font-size: 36px;">${quizScore}/${maxQuizQuestions}</h2>
+                                          <p style="text-align:center; font-size:18px;">Твій результат: <b>${percent}%</b></p>`;
+            feedbackEl.innerText = percent >= 70 ? "🎉 Чудова робота!" : "💪 Треба ще потренуватися!";
+            feedbackEl.style.color = percent >= 70 ? "var(--success)" : "var(--danger)";
+
+            nextBtn.innerText = "Повернутися в меню";
+            nextBtn.onclick = () => goToMenu();
+            nextBtn.style.display = "block";
+            return;
+        }
+
+        quizQuestionNumber++;
+        questionEl.innerText = `⏳ Питання ${quizQuestionNumber} з ${maxQuizQuestions}...`;
+        optionsContainer.innerHTML = "";
+        feedbackEl.innerText = "";
+        nextBtn.style.display = "none";
+
+        try {
+            const response = await fetch(`${API_URL}/quiz`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: currentUser.id, exclude_ids: askedWordIds })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Помилка сервера ${response.status}. Ви перезапустили api.py?`);
+            }
+
+            const data = await response.json();
+
+            if (data.status === "error") {
+                questionEl.innerText = "⚠️ " + data.message;
+                quizQuestionNumber--;
+                nextBtn.innerText = "Повернутися в меню";
+                nextBtn.onclick = () => goToMenu();
+                nextBtn.style.display = "block";
+                return;
+            }
+
+            askedWordIds.push(data.word_id);
+            questionEl.innerText = `Як перекладається:\n"${data.question}"?`;
+            currentQuizCorrect = data.correct;
+
+            data.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.className = "quiz-option-btn";
+                btn.innerText = opt;
+                btn.onclick = () => checkQuizAnswer(opt, btn);
+                optionsContainer.appendChild(btn);
+            });
+        } catch (error) {
+            questionEl.innerText = "❌ " + error.message;
+            quizQuestionNumber--;
+            nextBtn.innerText = "Повернутися в меню";
+            nextBtn.onclick = () => goToMenu();
+            nextBtn.style.display = "block";
+        }
+    }
+
+    function checkQuizAnswer(selectedOption, btnClicked) {
+        const buttons = document.querySelectorAll(".quiz-option-btn");
+        buttons.forEach(btn => btn.disabled = true);
+        const feedbackEl = document.getElementById("quiz-feedback");
+        const nextBtn = document.getElementById("next-quiz-btn");
+
+        if (selectedOption === currentQuizCorrect) {
+            btnClicked.classList.add("correct");
+            feedbackEl.innerText = "✅ Правильно!";
+            feedbackEl.style.color = "var(--success)";
+            quizScore++;
+        } else {
+            btnClicked.classList.add("wrong");
+            feedbackEl.innerText = `❌ Ні, правильно: ${currentQuizCorrect}`;
+            feedbackEl.style.color = "var(--danger)";
+            buttons.forEach(btn => {
+                if (btn.innerText === currentQuizCorrect) btn.classList.add("correct");
+            });
+        }
+
+        nextBtn.style.display = "block";
+    }
+</script>
+</body>
+</html>

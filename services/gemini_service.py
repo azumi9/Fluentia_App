@@ -164,7 +164,7 @@ async def generate_distractors_gemini(
         print("Error: GEMINI_API_KEY not found for distractor generation.")
         return None
 
-    model = "gemini-1.5-flash-latest"
+    model = "gemini-3.1-flash-lite-preview"
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
 

@@ -864,7 +864,6 @@ async def go_back_handler(message: types.Message, state: FSMContext):
         await state.clear()
         await message.answer("Головне меню:", reply_markup=main_menu())
 
-# Обробник непередбачених текстових повідомлень поза станами
 @user_private_router.message(StateFilter(None))
 async def handle_unknown_text(message: types.Message):
     await message.reply("Не розумію вас. Скористайтеся кнопками меню або командами /")

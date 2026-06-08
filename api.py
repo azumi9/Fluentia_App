@@ -1,12 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from pydantic import BaseModel
-import uvicorn
 import sqlite3
 import os
-import json
-import urllib.request
 import random
 import re
 import httpx

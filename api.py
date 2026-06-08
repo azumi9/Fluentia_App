@@ -33,6 +33,8 @@ class UserData(BaseModel):
     name: str
     age: int
     level: str
+    school: str = ""
+    contact: str = ""
 
 
 class RoleplayRequest(BaseModel):
@@ -88,10 +90,20 @@ async def save_word(req: SaveWordRequest):
         with sqlite3.connect(db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (req.user_id,))
-            cursor.execute("SELECT id FROM vocabulary WHERE user_id = ? AND original_text = ?",
-                           (req.user_id, req.original.strip()))
+
+            # Розумна перевірка: шукаємо, чи є вже це слово як оригінал АБО як переклад
+            cursor.execute("""
+                SELECT id FROM vocabulary 
+                WHERE user_id = ? AND (
+                    LOWER(original_text) IN (LOWER(?), LOWER(?)) OR 
+                    LOWER(translation) IN (LOWER(?), LOWER(?))
+                )
+            """, (req.user_id, req.original.strip(), req.translation.strip(), req.original.strip(),
+                  req.translation.strip()))
+
             if cursor.fetchone():
-                return {"status": "error"}
+                return {"status": "error", "message": "Слово вже є у словнику"}
+
             cursor.execute(
                 "INSERT INTO vocabulary (user_id, original_text, translation) VALUES (?, ?, ?)",
                 (req.user_id, req.original.strip(), req.translation.strip())
@@ -102,6 +114,25 @@ async def save_word(req: SaveWordRequest):
         print(f"Помилка БД: {e}")
         return {"status": "error"}
 
+
+@app.get("/api/stats/{user_id}")
+async def get_stats(user_id: int):
+    try:
+        db_path = os.path.join(os.getcwd(), "db.sqlite3")
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            # Рахуємо збережені слова
+            cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE user_id = ?", (user_id,))
+            words_count = cursor.fetchone()[0]
+
+            # Рахуємо кількість повідомлень у рольових іграх (активність)
+            cursor.execute("SELECT COUNT(*) FROM roleplay_history WHERE user_id = ? AND role = 'user'", (user_id,))
+            messages_count = cursor.fetchone()[0]
+
+        return {"status": "success", "words": words_count, "messages": messages_count}
+    except Exception as e:
+        print(f"Помилка статистики: {e}")
+        return {"status": "error"}
 
 @app.get("/api/dictionary/{user_id}")
 async def get_dict(user_id: int):

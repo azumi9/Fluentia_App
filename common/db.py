@@ -12,15 +12,17 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)  # Встановлення з'єднання з БД
     cursor = conn.cursor()  # Створення об'єкту курсора для виконання SQL запитів
 
-    # Створення таблиці користувачів (оновлена версія)
+    # Створення таблиці користувачів
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
-            name TEXT,
-            age INTEGER,
-            level TEXT DEFAULT 'B1'
-        )
-    ''')
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                name TEXT,
+                age INTEGER,
+                level TEXT DEFAULT 'B1',
+                school TEXT,  -- НОВЕ
+                contact TEXT  -- НОВЕ
+            )
+        ''')
 
     # Створення таблиці нагадувань
     cursor.execute('''
@@ -68,7 +70,7 @@ def init_db():
 
 
 # Функції для роботи з таблицею Users
-def save_user(user_id: int, name: str, age: int, level: str):
+def save_user(user_id: int, name: str, age: int, level: str, school: str, contact: str):
     """Зберігає або повністю оновлює дані користувача."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()

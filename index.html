@@ -66,7 +66,8 @@
         .feedback-error { color: var(--danger); background-color: #FFEBEE; font-size: 14px; padding: 8px 12px; border-radius: 10px; margin-bottom: 8px; display: inline-block; border: 1px solid #FFCDD2; }
 
         .input-area { display: flex; background: var(--card-bg); padding: 15px; border-top: 2px solid #E5E5E5; gap: 10px; }
-        .input-area input { flex: 1; margin: 0; border-radius: 20px; padding: 12px 15px; }
+        .input-area textarea { flex: 1; margin: 0; border-radius: 20px; padding: 12px 15px; font-size: 16px; border: 2px solid #E5E5E5; outline: none; transition: 0.2s; background: var(--card-bg); color: var(--text-main); font-family: 'Nunito', sans-serif; resize: none; overflow-y: auto; max-height: 100px; line-height: 1.4; }
+        .input-area textarea:focus { border-color: var(--primary); }
         .input-area button { background-color: var(--primary); color: white; border: none; border-radius: 20px; padding: 0 20px; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .input-area button:hover { background-color: var(--primary-hover); }
 
@@ -83,6 +84,21 @@
         .quiz-option-btn:hover:not(:disabled) { border-color: var(--primary); background: #F0F7FF; }
         .quiz-option-btn.correct { background: #E8F5E9; border-color: var(--success); color: var(--success-hover); }
         .quiz-option-btn.wrong { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+
+        /* Мікрофон */
+        #mic-btn { background-color: #F0F7FF; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; padding: 0; display: flex; justify-content: center; align-items: center; font-size: 20px; flex-shrink: 0; transition: 0.3s; margin-right: 5px; }
+        #mic-btn:hover { background-color: var(--primary); color: white; }
+        #mic-btn.recording { animation: pulse 1.5s infinite; background-color: var(--danger); border-color: var(--danger); color: white; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); }
+        }
+
+        /* Кнопка озвучки */
+        .speak-btn { background: none; border: none; cursor: pointer; font-size: 20px; margin-left: 10px; transition: 0.2s; vertical-align: middle; }
+        .speak-btn:hover { transform: scale(1.2); }
+
     </style>
 </head>
 <body>
@@ -94,17 +110,23 @@
         <div style="width: 60px;"></div>
     </div>
 
-    <div id="screen-login" class="screen active">
+<div id="screen-login" class="screen active">
         <div class="center-content">
             <h2>Привіт! Я Fluentia</h2>
             <p>Твій безпечний простір для вивчення англійської.</p>
             <input type="text" id="user-name" placeholder="Як тебе звати?">
             <input type="number" id="user-age" placeholder="Скільки тобі років?">
+
+            <input type="text" id="user-school" placeholder="Твій навчальний заклад">
+            <input type="text" id="user-contact" placeholder="Твій Email або Telegram (для зв'язку)">
+
             <select id="user-level">
                 <option value="A1">Рівень: A1 (Початківець)</option>
                 <option value="A2">Рівень: A2 (Елементарний)</option>
                 <option value="B1" selected>Рівень: B1 (Середній)</option>
                 <option value="B2">Рівень: B2 (Вище середнього)</option>
+                <option value="C1">Рівень: C1 (Просунутий)</option>
+                <option value="C2">Рівень: C2 (Досконалий)</option>
             </select>
             <button class="btn-primary btn-success" onclick="login()">Почати навчання</button>
         </div>
@@ -119,6 +141,8 @@
             <button class="menu-btn" onclick="openScreen('screen-scenarios', 'Рольові ігри')">🎭 Рольові ситуації (Чат)</button>
             <button class="menu-btn" onclick="openScreen('screen-dictionary', 'Мій словник')">📚 Мій словник</button>
             <button class="menu-btn" onclick="openScreen('screen-quiz-setup', 'Налаштування тесту')">🧠 Перевірка знань</button>
+            <button class="menu-btn" onclick="openStats()">📊 Мій прогрес</button>
+            <button class="menu-btn" onclick="openScreen('screen-support', 'Допомога')">👩‍🏫 Зв'язок з вчителем</button>
 
             <button class="menu-btn" style="margin-top: 20px; border-color: transparent; background: #E3F2FD; color: #4A90E2;" onclick="openScreen('screen-login', 'Налаштування профілю')">⚙️ Налаштування профілю</button>
         </div>
@@ -142,12 +166,61 @@
     </div>
 
     <div id="chat-input" class="input-area" style="display: none;">
-        <input type="text" id="text-input" placeholder="Напиши повідомлення..." onkeypress="handleKeyPress(event)">
+        <textarea id="text-input" placeholder="Напиши повідомлення..." rows="1" onkeypress="handleKeyPress(event)"></textarea>
+        <button id="mic-btn" onclick="startSpeechRecognition()" title="Голосове введення">🎤</button>
         <button onclick="sendMessage()">➤</button>
     </div>
 
     <div id="screen-dictionary" class="screen">
         <div id="dict-container" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    </div>
+
+<div id="screen-stats" class="screen">
+        <div class="center-content" style="justify-content: flex-start; padding-top: 20px;">
+            <h2>Твій прогрес 🏆</h2>
+            <p>Тут відображається твоя активність.</p>
+
+            <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 15px;">
+                <div style="background: white; flex: 1; padding: 15px; border-radius: 15px; border: 2px solid #E5E5E5;">
+                    <h1 id="stat-words" style="color: var(--primary); font-size: 28px;">0</h1>
+                    <p style="margin: 0; font-size: 14px; font-weight: 600;">Слів</p>
+                </div>
+                <div style="background: white; flex: 1; padding: 15px; border-radius: 15px; border: 2px solid #E5E5E5;">
+                    <h1 id="stat-messages" style="color: var(--success); font-size: 28px;">0</h1>
+                    <p style="margin: 0; font-size: 14px; font-weight: 600;">Повідомлень</p>
+                </div>
+            </div>
+
+            <div style="background: white; width: 100%; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); box-shadow: 0 4px 15px rgba(74, 144, 226, 0.1);">
+                <h3 style="margin-bottom: 15px; color: var(--text-main);">🎓 Сертифікат <span id="cert-level-text" style="color: var(--primary);">B1</span></h3>
+
+                <p style="text-align: left; margin-bottom: 5px; font-size: 14px; font-weight: 600;">📚 Вивчено слів: <span id="prog-words">0</span> / <span id="goal-words">0</span></p>
+                <div style="background: #E5E5E5; border-radius: 10px; height: 10px; margin-bottom: 15px; overflow: hidden;">
+                    <div id="bar-words" style="background: var(--primary); height: 100%; width: 0%; transition: 0.5s;"></div>
+                </div>
+
+                <p style="text-align: left; margin-bottom: 5px; font-size: 14px; font-weight: 600;">🗣 Повідомлень в чаті: <span id="prog-msg">0</span> / <span id="goal-msg">0</span></p>
+                <div style="background: #E5E5E5; border-radius: 10px; height: 10px; margin-bottom: 15px; overflow: hidden;">
+                    <div id="bar-msg" style="background: var(--success); height: 100%; width: 0%; transition: 0.5s;"></div>
+                </div>
+
+                <div id="cert-status" style="background: var(--danger); color: white; padding: 10px; border-radius: 10px; font-weight: 700; margin-top: 15px;">
+                    🔒 В процесі виконання...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-support" class="screen">
+        <div class="center-content">
+            <h1 style="font-size: 50px; margin-bottom: 10px;">👋</h1>
+            <h2>Потрібна допомога?</h2>
+            <p>Якщо ти не розумієш якесь правило, знайшов помилку або просто хочеш поділитися успіхами — напиши нашому куратору!</p>
+
+            <a href="https://t.me/mwerlix" target="_blank" style="text-decoration: none; width: 100%;">
+                <button class="btn-primary" style="background-color: #0088cc; box-shadow: 0 4px 0 #006699;">Написати у Telegram ✈️</button>
+            </a>
+        </div>
     </div>
 
     <div id="screen-quiz-setup" class="screen">
@@ -182,6 +255,9 @@
             document.getElementById("user-name").value = currentUser.name;
             document.getElementById("user-age").value = currentUser.age;
             document.getElementById("user-level").value = currentUser.level;
+            document.getElementById("user-school").value = currentUser.school;
+            document.getElementById("user-contact").value = currentUser.contact;
+
         }
     };
 
@@ -195,15 +271,19 @@
     let maxQuizQuestions = 5;
     let askedWordIds = [];
 
-    async function login() {
+async function login() {
         const nameInput = document.getElementById("user-name").value.trim();
         const ageInput = document.getElementById("user-age").value.trim();
+        const schoolInput = document.getElementById("user-school").value.trim();
+        const contactInput = document.getElementById("user-contact").value.trim();
 
-        if (!nameInput || !ageInput) return alert("Будь ласка, заповни всі поля!");
+        if (!nameInput || !ageInput) return alert("Будь ласка, введи ім'я та вік!");
 
         currentUser.name = nameInput;
         currentUser.age = parseInt(ageInput);
         currentUser.level = document.getElementById("user-level").value;
+        currentUser.school = schoolInput;
+        currentUser.contact = contactInput;
 
         localStorage.setItem("fluentia_user", JSON.stringify(currentUser));
 
@@ -215,7 +295,9 @@
                     user_id: currentUser.id,
                     name: currentUser.name,
                     age: currentUser.age,
-                    level: currentUser.level
+                    level: currentUser.level,
+                    school: currentUser.school,
+                    contact: currentUser.contact
                 })
             });
         } catch (error) {
@@ -224,6 +306,61 @@
 
         document.getElementById("welcome-text").innerText = `Привіт, ${currentUser.name}! 👋`;
         openScreen("screen-menu", "Головне меню");
+    }
+
+async function openStats() {
+        openScreen("screen-stats", "Мій прогрес");
+
+        // Матриця цілей залежно від рівня
+        const levelGoals = {
+            "A1": { words: 50, messages: 80 },
+            "A2": { words: 100, messages: 130 },
+            "B1": { words: 150, messages: 180 },
+            "B2": { words: 200, messages: 230 },
+            "C1": { words: 300, messages: 280 },
+            "C2": { words: 500, messages: 330 }
+        };
+
+        let currentGoal = levelGoals[currentUser.level] || levelGoals["B1"];
+
+        document.getElementById("cert-level-text").innerText = currentUser.level;
+        document.getElementById("goal-words").innerText = currentGoal.words;
+        document.getElementById("goal-msg").innerText = currentGoal.messages;
+
+        try {
+            const response = await fetch(`${API_URL}/stats/${currentUser.id}`);
+            const data = await response.json();
+
+            if (data.status === "success") {
+                let userWords = data.words;
+                let userMsgs = data.messages;
+
+                document.getElementById("stat-words").innerText = userWords;
+                document.getElementById("stat-messages").innerText = userMsgs;
+                document.getElementById("prog-words").innerText = userWords;
+                document.getElementById("prog-msg").innerText = userMsgs;
+
+                // Вираховуємо відсотки (але не більше 100%)
+                let wordsPercent = Math.min((userWords / currentGoal.words) * 100, 100);
+                let msgPercent = Math.min((userMsgs / currentGoal.messages) * 100, 100);
+
+                document.getElementById("bar-words").style.width = wordsPercent + "%";
+                document.getElementById("bar-msg").style.width = msgPercent + "%";
+
+                // Перевіряємо, чи можна видати сертифікат
+                const statusBox = document.getElementById("cert-status");
+                if (wordsPercent === 100 && msgPercent === 100) {
+                    statusBox.style.background = "var(--success)";
+                    statusBox.innerHTML = "🎉 Рівень пройдено! Сертифікат доступний.";
+                } else {
+                    statusBox.style.background = "#FF9800"; // Помаранчевий колір
+                    statusBox.innerHTML = "🔒 Виконай всі цілі для отримання сертифікату";
+                }
+
+            }
+        } catch (error) {
+            console.log("Помилка завантаження статистики");
+        }
     }
 
     function openScreen(screenId, title) {
@@ -247,7 +384,7 @@
         addMessage(`Привіт! Напиши слово чи фразу для перекладу.`, "bot-msg");
     }
 
-    function startRoleplay(scenario) {
+function startRoleplay(scenario) {
         chatMode = 'roleplay';
         currentScenario = scenario;
         const titles = { 'cafe': "В Кафе", 'school': "У Школі", 'city': "В Місті" };
@@ -259,7 +396,12 @@
         if (scenario === 'cafe') promptMsg = "Hello! Welcome to our cafe. What would you like to order today?";
         if (scenario === 'school') promptMsg = "Hi! I'm your new classmate. Are you new here?";
         if (scenario === 'city') promptMsg = "Hello! Do you need help finding a place?";
-        addMessage(promptMsg, "bot-msg");
+
+        // Робимо текст безпечним для JavaScript та додаємо кнопку динаміка 🔊
+        let safeReply = promptMsg.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        let msgWithSpeaker = `${promptMsg} <button class="speak-btn" onclick="speakText('${safeReply}')" title="Послухати">🔊</button>`;
+
+        addMessage(msgWithSpeaker, "bot-msg");
     }
 
     async function endRoleplay() {
@@ -318,7 +460,7 @@
                 let botHTML = "";
                 let fullText = data.result || "I'm sorry, I didn't get that.";
 
-                if (chatMode === 'roleplay') {
+if (chatMode === 'roleplay') {
                     if (fullText.includes("FEEDBACK:") && fullText.includes("REPLY:")) {
                         let parts = fullText.split("REPLY:");
                         let feedbackRaw = parts[0].replace("FEEDBACK:", "").trim();
@@ -329,9 +471,13 @@
                         } else {
                             botHTML += `<div class="feedback-error">💡 Порада: ${feedbackRaw}</div><br>`;
                         }
-                        botHTML += actualReply.replace(/\n/g, '<br>');
+
+                        // Добавляем кнопку озвучки рядом с английским текстом
+                        let safeReply = actualReply.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                        botHTML += `${actualReply.replace(/\n/g, '<br>')} <button class="speak-btn" onclick="speakText('${safeReply}')" title="Послухати">🔊</button>`;
                     } else {
-                        botHTML = fullText.replace(/\n/g, '<br>');
+                        let safeReply = fullText.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                        botHTML = `${fullText.replace(/\n/g, '<br>')} <button class="speak-btn" onclick="speakText('${safeReply}')" title="Послухати">🔊</button>`;
                     }
                 } else {
                     botHTML = fullText.replace(/\n/g, '<br>');
@@ -359,7 +505,12 @@
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    function handleKeyPress(event) { if (event.key === "Enter") sendMessage(); }
+    function handleKeyPress(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault(); // Зупиняє створення нового абзацу
+            sendMessage();
+        }
+    }
 
     async function saveWord(original, translation, btn) {
         btn.innerText = "⏳..."; btn.disabled = true;
@@ -548,6 +699,71 @@
 
         nextBtn.style.display = "block";
     }
+
+    // === ГОЛОСОВЕ ВВЕДЕННЯ (Web Speech API) === //
+    function startSpeechRecognition() {
+        // Перевіряємо, чи підтримує браузер цю функцію
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("❌ Ваш браузер не підтримує голосове введення. Спробуйте Google Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+
+        // Розумне перемикання мови:
+        // Якщо це рольова гра - слухаємо ТІЛЬКИ англійську.
+        // Якщо перекладач - слухаємо українську (або змішану).
+        recognition.lang = chatMode === 'roleplay' ? 'en-US' : 'uk-UA';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        const micBtn = document.getElementById("mic-btn");
+        const inputField = document.getElementById("text-input");
+
+        recognition.onstart = function() {
+            micBtn.classList.add("recording");
+            inputField.placeholder = "Слухаю вас...";
+        };
+
+        recognition.onresult = function(event) {
+            const speechResult = event.results[0][0].transcript;
+            // Вставляємо розпізнаний текст у поле вводу
+            inputField.value = speechResult;
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Помилка мікрофона:", event.error);
+            inputField.placeholder = "Помилка! Спробуйте ще раз...";
+            setTimeout(() => inputField.placeholder = "Напиши повідомлення...", 2000);
+        };
+
+        recognition.onend = function() {
+            micBtn.classList.remove("recording");
+            inputField.placeholder = "Напиши повідомлення...";
+        };
+
+        // Запускаємо запис
+        recognition.start();
+    }
+
+    // === ОЗВУЧКА ТЕКСТУ (Text-to-Speech) === //
+    function speakText(text, lang = 'en-US') {
+        if (!('speechSynthesis' in window)) {
+            alert("❌ Ваш браузер не підтримує озвучку тексту.");
+            return;
+        }
+        // Зупиняємо попередню озвучку, якщо вона ще йде
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.9; // Швидкість (трохи повільніше для дітей)
+        utterance.pitch = 1.0; // Тональність
+
+        window.speechSynthesis.speak(utterance);
+    }
+
 </script>
 </body>
 </html>

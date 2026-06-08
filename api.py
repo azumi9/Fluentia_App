@@ -67,7 +67,7 @@ class SaveWordRequest(BaseModel):
 
 @app.post("/api/onboarding")
 async def onboarding(user: UserData):
-    save_user(user.user_id, user.name, user.age, user.level)
+    save_user(user.user_id, user.name, user.age, user.level, user.school, user.contact)
     return {"status": "success"}
 
 

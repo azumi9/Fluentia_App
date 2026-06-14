@@ -16,13 +16,16 @@ def init_db():
     cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
+                username TEXT UNIQUE,  
+                password TEXT,         
                 name TEXT,
                 age INTEGER,
                 level TEXT DEFAULT 'B1',
-                school TEXT,  -- НОВЕ
-                contact TEXT  -- НОВЕ
+                school TEXT,
+                contact TEXT
             )
         ''')
+
 
     # Створення таблиці нагадувань
     cursor.execute('''

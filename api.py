@@ -7,7 +7,6 @@ import random
 import re
 import httpx
 
-
 from common.db import init_db, save_user, get_user_vocabulary, delete_word_from_vocabulary
 from services.gemini_service import translate_with_example_gemini, generate_distractors_gemini
 
@@ -24,13 +23,20 @@ app.add_middleware(
 )
 
 
-class UserData(BaseModel):
-    user_id: int
+# Модели данных для авторизации
+class UserRegister(BaseModel):
+    username: str
+    password: str
     name: str
     age: int
     level: str
     school: str = ""
     contact: str = ""
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
 
 class RoleplayRequest(BaseModel):
@@ -50,9 +56,10 @@ class TranslateRequest(BaseModel):
     text: str
     level: str = "B1"
 
+
 class QuizRequest(BaseModel):
-        user_id: int
-        exclude_ids: list[int] = []
+    user_id: int
+    exclude_ids: list[int] = []
 
 
 class SaveWordRequest(BaseModel):
@@ -61,10 +68,66 @@ class SaveWordRequest(BaseModel):
     translation: str
 
 
-@app.post("/api/onboarding")
-async def onboarding(user: UserData):
-    save_user(user.user_id, user.name, user.age, user.level, user.school, user.contact)
-    return {"status": "success"}
+# ЭНДПОИНТ: Регистрация нового аккаунта
+@app.post("/api/register")
+async def register_user(user: UserRegister):
+    db_path = os.path.join(os.getcwd(), "db.sqlite3")
+    try:
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+
+            # Проверяем, существует ли уже такой логин
+            cursor.execute("SELECT user_id FROM users WHERE LOWER(username) = LOWER(?)", (user.username.strip(),))
+            if cursor.fetchone():
+                return {"status": "error", "message": "Этот логин уже занят! Выбери другой."}
+
+            # Генерируем уникальный ID для ребенка
+            user_id = random.randint(100000, 999999)
+
+            cursor.execute("""
+                INSERT INTO users (user_id, username, password, name, age, level, school, contact)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, user.username.strip(), user.password, user.name.strip(), user.age, user.level,
+                  user.school.strip(), user.contact.strip()))
+            conn.commit()
+
+        return {"status": "success", "user_id": user_id}
+    except Exception as e:
+        print(f"Ошибка регистрации: {e}")
+        return {"status": "error", "message": "Ошибка сервера при регистрации."}
+
+
+# ЭНДПОИНТ: Вход в существующий аккаунт (с любого устройства)
+@app.post("/api/login")
+async def login_user(user: UserLogin):
+    db_path = os.path.join(os.getcwd(), "db.sqlite3")
+    try:
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT user_id, name, age, level, school, contact 
+                FROM users 
+                WHERE LOWER(username) = LOWER(?) AND password = ?
+            """, (user.username.strip(), user.password))
+            row = cursor.fetchone()
+
+            if row:
+                return {
+                    "status": "success",
+                    "user": {
+                        "id": row[0],
+                        "name": row[1],
+                        "age": row[2],
+                        "level": row[3],
+                        "school": row[4],
+                        "contact": row[5]
+                    }
+                }
+            else:
+                return {"status": "error", "message": "Неверный логин или пароль!"}
+    except Exception as e:
+        print(f"Ошибка входа: {e}")
+        return {"status": "error", "message": "Ошибка сервера при входе."}
 
 
 @app.post("/api/translate")
@@ -130,6 +193,7 @@ async def get_stats(user_id: int):
         print(f"Помилка статистики: {e}")
         return {"status": "error"}
 
+
 @app.get("/api/dictionary/{user_id}")
 async def get_dict(user_id: int):
     try:
@@ -139,6 +203,31 @@ async def get_dict(user_id: int):
         return {"status": "success", "words": data}
     except Exception as e:
         return {"status": "error"}
+
+class ProfileUpdate(BaseModel):
+    user_id: int
+    name: str
+    age: int
+    level: str
+    school: str = ""
+    contact: str = ""
+
+@app.post("/api/update_profile")
+async def update_profile(data: ProfileUpdate):
+    db_path = os.path.join(os.getcwd(), "db.sqlite3")
+    try:
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users 
+                SET name = ?, age = ?, level = ?, school = ?, contact = ?
+                WHERE user_id = ?
+            """, (data.name.strip(), data.age, data.level, data.school.strip(), data.contact.strip(), data.user_id))
+            conn.commit()
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Помилка оновлення профілю: {e}")
+        return {"status": "error", "message": "Помилка сервера під час оновлення."}
 
 @app.delete("/api/dictionary/{user_id}/{word_id}")
 async def delete_word(user_id: int, word_id: int):
@@ -151,6 +240,7 @@ async def delete_word(user_id: int, word_id: int):
     except Exception as e:
         print(f"Помилка видалення слова: {e}")
         return {"status": "error"}
+
 
 @app.post("/api/roleplay")
 async def roleplay(req: RoleplayRequest):
@@ -278,6 +368,7 @@ async def roleplay_feedback(req: FeedbackRequest):
             print(f"❌ Критична помилка (Feedback): {e}")
             return {"status": "error"}
 
+
 @app.post("/api/quiz")
 async def get_quiz(req: QuizRequest):
     words = get_user_vocabulary(req.user_id, 500, 0)
@@ -328,6 +419,8 @@ async def get_quiz(req: QuizRequest):
         "correct": correct_translation
     }
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)

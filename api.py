@@ -6,6 +6,10 @@ import os
 import random
 import re
 import httpx
+import io
+import datetime
+from PIL import Image, ImageDraw, ImageFont
+from fastapi.responses import StreamingResponse
 
 from common.db import init_db, save_user, get_user_vocabulary, delete_word_from_vocabulary
 from services.gemini_service import translate_with_example_gemini, generate_distractors_gemini
@@ -419,6 +423,110 @@ async def get_quiz(req: QuizRequest):
         "correct": correct_translation
     }
 
+
+@app.get("/api/certificate/{user_id}")
+async def download_certificate(user_id: int):
+    db_path = os.path.join(os.getcwd(), "db.sqlite3")
+    try:
+        # 1. Достаем имя и уровень из БД
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, level FROM users WHERE user_id = ?", (user_id,))
+            user_data = cursor.fetchone()
+
+        if not user_data:
+            raise HTTPException(status_code=404, detail="Користувача не знайдено")
+
+        name, level = user_data
+
+        # 2. РОЗУМНИЙ НОМЕР СЕРТИФІКАТА
+        # Формируем уникальный номер на основе года и ID пользователя в БД
+        year = datetime.datetime.now().year
+        cert_no = f"FL-{year}-{user_id}"
+        full_number = f"№ {cert_no}\nTBT Ukr"
+
+        # 3. ЛОГІКА ВИБОРУ ФОНУ ЗАЛЕЖНО ВІД РІВНЯ
+        backgrounds = {
+            "A1": "background_1.png",
+            "A2": "background_1.png",
+            "B1": "background_2.png",
+            "B2": "background_2.png",
+            "C1": "background_3.png",
+            "C2": "background_3.png"
+        }
+        # Берем нужное имя файла (если уровня нет в словаре, ставим дефолтный)
+        bg_filename = backgrounds.get(level, "background_2.png")
+
+        # 4. Шляхи до файлів
+        base_dir = os.getcwd()
+        bg_path = os.path.join(base_dir, bg_filename)
+        font_name_path = os.path.join(base_dir, 'Quicksand-Regular.ttf')
+        font_num_path = os.path.join(base_dir, 'OldStandardTTRegular.ttf')
+
+        # 5. Малюємо сертифікат
+        img = Image.open(bg_path).convert("RGB")
+        draw = ImageDraw.Draw(img)
+
+        # Розміри шрифтів
+        font_name = ImageFont.truetype(font_name_path, 180)
+        font_num = ImageFont.truetype(
+            font_num_path, 45
+        )  # Чуть зменшили для акуратності
+
+        # Фірмові кольори Fluentia (RGB)
+        color_name = (188, 226, 36)  # Яскраво-салатовий
+        color_num = (0, 68, 136)  # Темно-синій (під логотип та 2026)
+
+        # Отримуємо реальні розміри фону для автоматичних пропорцій
+        W, H = img.size
+
+        # ПРОПОРЦІЙНІ КООРДИНАТИ:
+        # Ім'я — по центру правої порожньої зони
+        name_pos = (
+            int(W * 0.680),
+            int(H * 0.485),
+        )
+        # Номер — зміщений правіше (44% ширини замість краю), щоб не вилазити на лапу
+        num_pos = (int(W * 0.440), int(H * 0.915))
+
+        # Малюємо Ім'я (stroke_width=3 робить шрифт програмно ЖИРНИМ!)
+        draw.text(
+            name_pos,
+            name,
+            font=font_name,
+            fill=color_name,
+            anchor="mm",
+            stroke_width=3,
+            stroke_fill=color_name,
+        )
+
+        # Малюємо Номер (акуратний темно-синій колір, вирівнювання по центру рядка)
+        draw.text(
+            num_pos,
+            full_number,
+            font=font_num,
+            fill=color_num,
+            anchor="lm",
+            spacing=15,
+        )
+
+        # 6. Віддаємо файл
+        img_io = io.BytesIO()
+        img.save(img_io, format='PNG')
+        img_io.seek(0)
+
+        safe_name = name.replace(' ', '_')
+        filename = f"Certificate_{level}_{safe_name}.png"
+
+        return StreamingResponse(
+            img_io,
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+
+    except Exception as e:
+        print(f"Помилка генерації сертифіката: {e}")
+        raise HTTPException(status_code=500, detail="Помилка сервера при генерації")
 
 if __name__ == "__main__":
     import uvicorn

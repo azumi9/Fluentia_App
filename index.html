@@ -12,8 +12,8 @@
             --success: #10B981;
             --success-hover: #059669;
             --danger: #FF4D85;
-            --bg-color: #F4FBF7; /* Резервний колір */
-            --bg-gradient: linear-gradient(135deg, #F4FBF7 0%, #E2F2E9 100%); /* Той самий легкий градієнт */
+            --bg-color: #F4FBF7;
+            --bg-gradient: linear-gradient(135deg, #F4FBF7 0%, #E2F2E9 100%);
             --card-bg: #FFFFFF;
             --text-main: #1E293B;
             --text-muted: #64748B;
@@ -83,7 +83,6 @@
         .btn-primary:active { transform: translateY(0); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* Банер на головній */
         .welcome-banner { background: linear-gradient(135deg, var(--primary) 0%, #059669 100%); border-radius: 24px; padding: 40px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; box-shadow: 0 15px 30px rgba(16, 185, 129, 0.2); }
         .welcome-banner h2 { color: white; margin-bottom: 10px; font-size: 36px; }
         .welcome-banner p { color: rgba(255,255,255,0.9); margin-bottom: 0; }
@@ -100,7 +99,6 @@
         .menu-btn span { font-size: 15px; font-weight: 600; color: var(--text-muted); }
         .menu-btn:hover { border-color: var(--primary); box-shadow: 0 20px 40px rgba(16, 185, 129, 0.1); transform: translateY(-5px); }
 
-        /* Картки сценаріїв */
         .scenario-card {
             background-color: var(--card-bg); border: 1px solid var(--border-light); padding: 40px 30px;
             border-radius: 24px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column;
@@ -112,7 +110,6 @@
         .scenario-subtitle { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
         .scenario-desc { font-size: 16px; color: var(--text-muted); line-height: 1.5; font-weight: 600;}
 
-        /* Картка Підтримки */
         .support-card { background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 30px; padding: 50px; display: flex; gap: 50px; align-items: center; box-shadow: 0 20px 40px rgba(16, 185, 129, 0.05); max-width: 900px; margin: 0 auto; }
         .support-avatar { width: 150px; height: 150px; background: var(--chat-user); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 64px; flex-shrink: 0; }
         .support-content { flex: 1; }
@@ -120,12 +117,10 @@
         .support-list li { font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
         .support-list li::before { content: '✓'; color: var(--primary); font-weight: 800; }
 
-        /* Блок налаштування тесту */
         .quiz-setup-container { display: flex; gap: 30px; max-width: 1000px; margin: 0 auto; align-items: flex-start; }
         .quiz-panel { background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05); flex: 2; }
         .quiz-custom-panel { background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05); flex: 1; text-align: center; }
 
-        /* Чат */
         .chat-container { max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
         #chat-box { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 30px 20px; overflow-y: auto; }
         .message { padding: 20px 25px; border-radius: 24px; max-width: 75%; word-wrap: break-word; line-height: 1.6; font-size: 18px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
@@ -144,7 +139,6 @@
 
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 133, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(255, 77, 133, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 133, 0); } }
 
-        /* Словник та Тести */
         .dict-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; width: 100%; }
         .dict-word { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; transition: 0.3s; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.03); }
         .dict-word:hover { border-color: var(--primary); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.08); transform: translateY(-3px); }
@@ -193,28 +187,32 @@
                         <button id="tab-register" onclick="toggleAuthTab('register')" style="flex: 1; padding: 15px; background: none; border: none; font-size: 18px; font-weight: 700; color: var(--text-muted); cursor: pointer; text-align: left;">Register</button>
                     </div>
 
-                    <input type="text" id="auth-username" placeholder="Username (Логін)">
-                    <input type="password" id="auth-password" placeholder="Password (Пароль)">
+                    <form onsubmit="event.preventDefault(); handleAuth();" style="width: 100%; display: flex; flex-direction: column;">
+                        <!-- Додано name та autocomplete для браузера -->
+                        <input type="text" id="auth-username" name="username" placeholder="Username (Логін)" autocomplete="username">
+                        <input type="password" id="auth-password" name="password" placeholder="Password (Пароль)" autocomplete="current-password">
 
-                    <div id="register-fields" style="display: none;">
-                        <div style="display: flex; gap: 15px;">
-                            <input type="text" id="user-firstname" placeholder="First Name (Ім'я)">
-                            <input type="text" id="user-lastname" placeholder="Last Name (Прізвище)">
+                        <div id="register-fields" style="display: none;">
+                            <div style="display: flex; gap: 15px;">
+                                <input type="text" id="user-firstname" placeholder="First Name (Ім'я)" autocomplete="given-name">
+                                <input type="text" id="user-lastname" placeholder="Last Name (Прізвище)" autocomplete="family-name">
+                            </div>
+                            <input type="number" id="user-age" placeholder="Age (Вік)">
+                            <input type="text" id="user-school" placeholder="School / Institution">
+                            <input type="text" id="user-contact" placeholder="Email or Telegram" autocomplete="email">
+                            <select id="user-level">
+                                <option value="A1">Level: A1 (Beginner)</option>
+                                <option value="A2">Level: A2 (Elementary)</option>
+                                <option value="B1" selected>Level: B1 (Intermediate)</option>
+                                <option value="B2">Level: B2 (Upper Intermediate)</option>
+                                <option value="C1">Level: C1 (Advanced)</option>
+                                <option value="C2">Level: C2 (Proficiency)</option>
+                            </select>
                         </div>
-                        <input type="number" id="user-age" placeholder="Age (Вік)">
-                        <input type="text" id="user-school" placeholder="School / Institution">
-                        <input type="text" id="user-contact" placeholder="Email or Telegram">
-                        <select id="user-level">
-                            <option value="A1">Level: A1 (Beginner)</option>
-                            <option value="A2">Level: A2 (Elementary)</option>
-                            <option value="B1" selected>Level: B1 (Intermediate)</option>
-                            <option value="B2">Level: B2 (Upper Intermediate)</option>
-                            <option value="C1">Level: C1 (Advanced)</option>
-                            <option value="C2">Level: C2 (Proficiency)</option>
-                        </select>
-                    </div>
 
-                    <button id="auth-submit-btn" class="btn-primary" onclick="handleAuth()">Access Platform</button>
+                        <!-- Кнопку тепер робимо type="submit", щоб браузер зрозумів, що це відправка даних -->
+                        <button type="submit" id="auth-submit-btn" class="btn-primary">Log In</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -611,9 +609,21 @@
                 const statusBox = document.getElementById("cert-status");
                 if (wordsPercent === 100 && msgPercent === 100) {
                     statusBox.style.background = "var(--success)";
-                    statusBox.innerHTML = "🎉 Level completed! Certificate is available.";
+                    statusBox.style.cursor = "pointer";
+                    statusBox.innerHTML = "🎉 Level completed! Click here to Download Certificate 📥";
+
+                    statusBox.onclick = function() {
+                        statusBox.innerHTML = "⏳ Generating...";
+                        window.location.href = `${API_URL}/certificate/${currentUser.id}`;
+
+                        setTimeout(() => {
+                            statusBox.innerHTML = "🎉 Level completed! Click here to Download Certificate 📥";
+                        }, 3000);
+                    };
                 } else {
                     statusBox.style.background = "#FFB020";
+                    statusBox.style.cursor = "default";
+                    statusBox.onclick = null;
                     statusBox.innerHTML = "🔒 Complete all goals to unlock certificate";
                 }
             }
@@ -683,6 +693,7 @@
             if (data.status === "success") {
                 let formattedFeedback = `<strong>📊 Результати (Feedback):</strong><br><br>` + data.result.replace(/\n/g, '<br>');
                 addMessage(formattedFeedback, "bot-msg");
+                addMessage(formattedFeedback, "bot-msg");
             } else {
                 addMessage("❌ Помилка аналізу.", "bot-msg");
             }
@@ -741,7 +752,7 @@
                     }
                 } else {
                     botHTML = fullText.replace(/\n/g, '<br>');
-                    if (text.split(' ').length <= 5) {
+                    if (text.split(' ').length <= 5 && !fullText.includes("описка")) {
                         const transLine = fullText.split('\n').find(l => l.includes("Переклад:"));
                         if (transLine) {
                             let pt = transLine.substring(transLine.indexOf(":") + 1).split(',')[0].trim();
@@ -844,8 +855,46 @@
         startQuiz(parseInt(val));
     }
 
-    function startQuiz(length) {
+async function startQuiz(length) {
         try {
+            // 1. Делаем быстрый запрос к серверу, чтобы узнать точное количество слов
+            const response = await fetch(`${API_URL}/stats/${currentUser.id}`);
+            const data = await response.json();
+
+            if (data.status === "success") {
+                // 2. Слов должно быть не меньше, чем вопросов в тесте
+                // (И всегда минимум 4, чтобы хватило на варианты ответа А, Б, В, Г)
+                let requiredWords = Math.max(length, 4);
+
+                // 3. Если слов не хватает — блокируем запуск и выводим красивую ошибку
+                if (data.words < requiredWords) {
+                    openScreen("screen-quiz", "Quiz");
+
+                    // Выводим динамическое сообщение об ошибке
+                    document.getElementById("quiz-question").innerHTML = `⚠️ Додайте мінімум <span style="color: var(--danger);">${requiredWords} слів</span> до словника.`;
+
+                    // Подсказываем, сколько слов есть сейчас
+                    document.getElementById("quiz-options").innerHTML = `
+                        <div style="text-align:center; padding: 20px; background: #FFF0F4; border-radius: 16px; margin-top: 10px;">
+                            <p style="font-size: 18px; margin: 0; color: var(--text-main); font-weight: 600;">
+                                Зараз у вашому словнику збережено слів: <b style="font-size: 24px; color: var(--primary);">${data.words}</b>
+                            </p>
+                            <p style="font-size: 16px; color: var(--text-muted); margin-top: 10px; margin-bottom: 0;">
+                                Збережіть ще кілька слів у Перекладачі, щоб розпочати цей тест!
+                            </p>
+                        </div>
+                    `;
+                    document.getElementById("quiz-feedback").innerText = "";
+
+                    let nextBtn = document.getElementById("next-quiz-btn");
+                    nextBtn.innerText = "Back to Dashboard";
+                    nextBtn.onclick = () => goToMenu();
+                    nextBtn.style.display = "block";
+                    return; // Прерываем функцию, тест не запускается
+                }
+            }
+
+            // Если слов хватает — штатно запускаем тест
             maxQuizQuestions = length;
             quizQuestionNumber = 0;
             quizScore = 0;
